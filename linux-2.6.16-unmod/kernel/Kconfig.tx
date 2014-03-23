@@ -1,0 +1,212 @@
+menu "OSA Tools"
+
+config OSA
+  bool "OSA Group top-level configuration switch"
+  default n
+  help
+    Top-level configuration switch
+
+config OSA_NO_RA_PROFILE
+  bool "Disable reading other's stacks in profile_pc"
+  depends on OSA
+  default y
+  help
+    profile_pc will read the return address off of a lock function's
+    stack, automatically conflicting for tx lock functions.
+
+config OSA_FIX_KERNEL_BUGS
+  bool "Master kernel bug-fix switch"
+  depends on OSA
+  default y
+  help
+    This config option will be used to selectively enable any Real
+    Live Kernel Bug fixes that we happen upon.
+
+config OSA_TOOLS
+  bool "Enable OSA Tools"
+  default n
+  depends on OSA
+  help
+    Enables OSA tools, can be used with or without transactions.
+
+config TX
+  bool "HTM support for user-level TM experiments."
+  default y
+  depends on OSA_TOOLS
+  help
+    Enable the xpush/xpop instructions on syscall entry/exit.
+
+
+config TX_HARDCODE_FREQ
+  bool "Hardcode cpu frequency to 1 GHz (DEPRECATED)"
+  default n
+  depends on OSA_TOOLS
+  help
+    Don't do this anymore. It is deprecated.
+
+config OS_VISIBILITY
+  bool "Enable Simulator notification of kernel state changes."
+  default y
+  depends on OSA_TOOLS
+  help
+    Adds magic instructions to the kernel to notify the simulator of
+    state changes in the kernel.
+
+config OS_TIMER_COUNT
+  bool "Notify simulator of timer events."
+  default n
+  depends on OS_VISIBILITY && OSA_TOOLS
+  help
+    Adds a magic instruction to the timer_interrupt routine to count
+    timer interrupts.  This is disabled by default because of the high
+    load it introduces on the simulator.  This feature is intended for
+    hand-verification of kernel timings.
+
+config TX_KERNALLOC_BENCHMARK
+  bool "OSA kmalloc benchmark"
+  depends on OSA_TOOLS && SMP
+  default n
+  help
+    Enable to run kernel allocator benchmark (kernalloc)
+
+config TX_KTHREAD_BENCHMARK
+  bool "OSATXM kthread shared counter bonanza"
+  depends on SMP && OSA_TOOLS
+  default n
+  help
+    Enable to run shared counter benchmark
+
+config INDEPENDENT_COUNTER
+  bool "Shared counter increments independent variables"
+  depends on TX_KTHREAD_BENCHMARK
+  default n
+  help
+    Each thread in the shared counter will increment a separate
+    variable instead of a shared variable.  This benchmark exists to
+    validate that osatxm can win at something.
+
+config ROBUSTO_COUNTER
+  bool "Check shared counter results"
+  depends on TX_KTHREAD_BENCHMARK
+  default y
+  help
+     Validate that the shared counter actually reaches the 
+     target value.  Primarily useful for hardware debugging.
+
+config TX_RBTREE_BENCHMARK
+  bool "OSA rbtree microbenchmark"
+  depends on SMP && OSA_TOOLS
+  default y
+  help
+    Enable to run rbtree benchmark
+
+config TX_RBTREE_USES_XSPINLOCK
+  bool "OSA rbtree microbenchmark, using xspins"
+  depends on SMP && OSA_TOOLS && TX_RBTREE_BENCHMARK && TX
+  default y
+  help
+    Enable to run rbtree benchmark with transactions
+
+config TX_PROB_BENCHMARK
+  bool "OSA prob microbenchmark"
+  depends on SMP && OSA_TOOLS
+  default y
+  help
+    Enable to run prob benchmark
+
+config TX_PROB_USES_XSPINLOCK
+  bool "OSA prob microbenchmark, using xspins"
+  depends on SMP && OSA_TOOLS && TX_PROB_BENCHMARK && TX
+  default y
+  help
+    Enable to run prob benchmark with transactions
+
+config TX_RW_BENCHMARK
+  bool "OSA rw microbenchmark"
+  depends on SMP && OSA_TOOLS
+  default y
+  help
+    Enable to run rw benchmark
+
+config TX_RW_USES_XSPINLOCK
+  bool "OSA rw microbenchmark, using xspins"
+  depends on SMP && OSA_TOOLS && TX_RW_BENCHMARK && TX
+  default y
+  help
+    Enable to run rw benchmark with transactions
+
+
+config NO_MUTEX
+  bool "Replace mutex code with calls to a semaphore"
+  default n
+  depends on OSA_TOOLS
+  help
+    Replace the guts of the mutex functions with a binary semaphore.
+    Just used for testing purposes
+
+
+config OSA_REGISTER_LOCKS
+  bool "Register lock names with the simulator"
+  default y
+  depends on OSA_TOOLS
+  help
+    Uses magic instructions to tell the simulator the names of
+    dynamically created locks.
+
+config SYNCCHAR_RCU_NOP
+  bool "Insert nop in rcu_read_lock for syncchar"
+  default y
+  depends on OSA_TOOLS
+  help
+    Inserts a nop instruction into the rcu_read_lock() so that
+    syncchar can distinguish it from a regular old preempt_disable().
+    If you are not sure, say y.
+
+config OSA_DEBUG_BUGVERBOSE
+  bool "Make DEBUG_BUGVERBOSE kernel disassemble correctly"
+  default y
+  depends on OSA_TOOLS && DEBUG_BUGVERBOSE
+  help
+    Inserts 8 nop instructions after a BUG() so that the disassembler
+    can regain its bearings afterward.  The disassembler gets confused
+    by the fact that BUG() embeds the file and line number in the
+    binary.  The problem is that it then can annex instructions from
+    the next function into trying to disassemble this data.
+
+config OSA_DI_OPT
+  bool "Optimize data structures for Data Independence"
+  default n
+  depends on OSA_TOOLS
+  help
+    Top-level menu item for data structure optimizations that increase
+    data independence.
+
+config OPT_ZONE_LRU_LIST
+  bool "Optimize Zone LRU list"
+  default n
+  depends on OSA_DI_OPT
+  help
+    Reorganize the zone lru lists as a hash table.
+
+config OPT_ZONE_LRU_COUNTERS
+  bool "Optimize Zone LRU counters"
+  default n
+  depends on OSA_DI_OPT
+  help
+    Reorganize the zone lru list counter as per-cpu variables.
+
+config OPT_SHORTEN_BUDDY_SYSTEM
+  bool "Shorten buddy system critical sections"
+  default n
+  depends on OSA_DI_OPT
+  help
+    Reorganize bulk page allocation/deallocation code such that stat
+    code that doesn't need to be included is moved out and each iteration
+    of the loops are a single critical section.
+
+
+ 
+endmenu
+
+
+

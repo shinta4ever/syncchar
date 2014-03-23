@@ -1,0 +1,25 @@
+#!/bin/sh
+sed -e '/osa64.img/s/osa64[.]img/osa.img/g' osa-common.simics -i
+
+if [ -h "osa.img" ]; then
+	IMGFILE=`readlink osa.img`
+else
+	IMGFILE=osa.img
+fi
+
+echo Image file name is $IMGFILE
+
+if [ "../linux-2.6.22.6/vmlinux" -nt $IMGFILE ];
+then
+	echo "linux file is newer than image! run ./cp_linux"
+	exit 1
+fi
+
+#./simics targets/x86-440bx/dredd-common.simics
+if [ $# -ne 1 ]; then
+    ./simics -stall -no-stc osa-common.simics
+else
+    ./simics -stall -no-stc osa-common.simics -e "\$cache_seed = $1"
+fi
+#./simics -stall osa-common.simics
+#./simics osa-common.simics

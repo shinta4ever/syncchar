@@ -1,0 +1,1 @@
+../sws/image-tools/grub-menu-parser.pl

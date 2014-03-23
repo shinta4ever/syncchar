@@ -1,0 +1,52 @@
+MetaTM Version 1.0
+------------------
+
+For Licensing information, see LICENSE.
+For contributor list, see AUTHORS.
+
+Getting Started with MetaTM
+---------------------------
+
+MetaTM operates as a module for Virtutech Simics. Thus, the first step
+is to download and install Simics. Simics requires a license, but free
+academic licenses (personal and site) are available.
+
+Once you have simics installed, download the MetaTM tarball and disk
+image from here (coming soon).
+
+Unpack the tarball, which should provide you with a top-level
+directory labeled sws.
+
+cd into this directory and run the following commands:
+
+(simics installation directory)/bin/workspace-setup . --force
+make
+
+Once this has completed successfully, move the disk image into the sws
+directory. At this point, you should be able to start a simulation
+with the following command:
+
+./s
+
+
+Configuring Your Simulation
+---------------------------
+
+The parameters of the simulated machine can be changed by editing the
+file osa-common.simics. Most importantly, the benchmarks to be
+automatically executed after boot can be changed by editing the
+@benchmarks array.
+
+
+Compiling TxLinux
+-----------------
+
+
+One may download and compile TxLinux for oneself by downloading the
+source tarball here (coming soon). The build process is identical to
+Linux, except that there are menuconfig options to enable transactions
+in various subsystems.
+
+Need help?
+
+You can email metatm@utlists.utexas.edu with questions or comments.

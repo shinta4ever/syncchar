@@ -1,0 +1,4 @@
+README for trans-staller-plus
+
+This is a one-off of the trans-staller that is shipped with simics.
+It enables pseudo-random cache perturbation.

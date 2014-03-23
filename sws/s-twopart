@@ -1,0 +1,3 @@
+#!/bin/sh
+./simics -fast osa-lazy.simics
+./simics -stall -no-stc osa-loadcp.simics

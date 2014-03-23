@@ -1,0 +1,49 @@
+# ==============================================================================
+#
+# Makefile.common
+#
+# ==============================================================================
+
+
+%.o$(BIN_SUFFIX): %.c *.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.o$(BIN_SUFFIX): %.cpp *.h
+	$(CPP) $(CPPFLAGS) -c $< -o $@
+
+%.i$(BIN_SUFFIX): %.c *.h
+	$(CC) $(CFLAGS) -E  -c $< -o $@
+
+%.i$(BIN_SUFFIX): %.cpp *.h
+	$(CPP) $(CPPFLAGS) -E -c $< -o $@
+
+# ==============================================================================
+# Rules
+# ==============================================================================
+
+S_PROG := $(PROG)$(BIN_SUFFIX)
+S_OBJS := $(addsuffix $(BIN_SUFFIX),$(OBJS))
+S_DOTIS := $(addsuffix $(BIN_SUFFIX),$(DOTIS))
+
+.PHONY: default
+default: $(PROG)$(BIN_SUFFIX)
+
+.PHONY: clean
+clean:
+	$(RM) $(S_OBJS) $(S_PROG) $(OUTPUT)
+
+.PHONY: install
+install:
+	@echo $(S_PROG) -\> $(ABS_PREFIX)
+	test -d "$(ABS_PREFIX)"
+	cp $(S_PROG) $(ABS_PREFIX)
+
+$(S_PROG): $(S_OBJS)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $(S_PROG)
+
+
+# ==============================================================================
+#
+# End of Makefile.common
+#
+# ==============================================================================

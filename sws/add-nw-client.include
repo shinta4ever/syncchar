@@ -1,0 +1,16 @@
+# MetaTM Project
+# File Name: add-nw-client.include
+#
+# Description: Sets up networking among simics instances.
+#
+# Operating Systems & Architecture Group
+# University of Texas at Austin - Department of Computer Sciences
+# Copyright 2006, 2007. All Rights Reserved.
+# See LICENSE file for license terms.
+
+new-ethernet-link name=link0
+bge0.connect link0
+
+
+connect-central localhost
+link0->central = central_client

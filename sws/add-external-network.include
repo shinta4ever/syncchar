@@ -1,0 +1,15 @@
+# MetaTM Project
+# File Name: add-external-network.include
+#
+# Description: Simics commands to enable a network connection with
+# machines outside of the simulation.
+#
+# Operating Systems & Architecture Group
+# University of Texas at Austin - Department of Computer Sciences
+# Copyright 2006, 2007. All Rights Reserved.
+# See LICENSE file for license terms.
+
+## basic nat
+connect-real-network-napt ethernet-link = link0
+## expose port for apache
+connect-real-network-port-in ethernet-link = link0 target-ip = $ip_address target-port = 80 host-port = 8080 -tcp

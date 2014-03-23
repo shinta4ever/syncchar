@@ -1,0 +1,47 @@
+#!/bin/sh
+LOOPDEV=/dev/loop3
+
+if [ -z $TARGET_ARCH ] || [ $TARGET_ARCH = i386 ]; then
+	TARGET_ARCH=i386
+	DISK_IMG=../sws/osa.img
+elif [ $TARGET_ARCH = x86_64 ]; then
+	TARGET_ARCH=x86_64
+	DISK_IMG=../sws/osa64.img
+else
+	echo "TARGET_ARCH($TARGET_ARCH) is incorrect."
+	exit 1
+fi
+
+#DISK_IMG=../sws/specweb-server.img
+#DISK_IMG=../sws/osa.img
+MNT=./mnt
+
+function mount_image() {
+  mkdir -p $MNT
+  umount $MNT >& /dev/null
+  if mount -o offset=32256,loop $DISK_IMG $MNT
+  then 
+      return
+  else
+      exit
+  fi
+}
+
+function unmount_image() {
+  umount $MNT
+}
+
+function set_loopback() {
+  losetup -d $LOOPDEV >& /dev/null
+  losetup -o 32256 $LOOPDEV $DISK_IMG
+}
+
+function unset_loopback() {
+  losetup -d $LOOPDEV 
+}
+
+# 1.5 g image
+function set_loopback_swap() {
+  losetup -d $LOOPDEV >& /dev/null
+  losetup -o 1250032640 $LOOPDEV $DISK_IMG
+}

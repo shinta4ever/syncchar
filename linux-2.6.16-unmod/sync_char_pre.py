@@ -1,0 +1,1 @@
+../scripts/sync_char_pre.py

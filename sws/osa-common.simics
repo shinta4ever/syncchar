@@ -1,0 +1,505 @@
+# MetaTM Project
+# File Name: osa-common.simics
+#
+# Description: 
+#
+# Operating Systems & Architecture Group
+# University of Texas at Austin - Department of Computer Sciences
+# Copyright 2006, 2007. All Rights Reserved.
+# See LICENSE file for license terms.
+
+echo "Your host is: "
+@import os
+@os.system('hostname')
+
+# HARDWARE MODEL CONFIGURATION
+$use_agp      = TRUE
+if not defined disk_image { $disk_image   = "osa.img" }
+$disk_size    = 1585446912
+
+# Uncomment to have a second disk
+#$disk_image2  = "specweb.img"
+#$disk_size2   = 4227858432
+
+# To enable/disable what modules are loaded, you can just change these defaults..
+# You can also do this from the command line (e.g.  -e '$use_osatxm=false'), helpful for condor scripts..
+if not defined use_osatxm     { $use_osatxm = false }
+if not defined use_syncchar   { $use_syncchar = true }
+if not defined use_synccount  { $use_synccount = false }
+if not defined use_tx_log     { $use_tx_log = 0 }
+if not defined fast_caches    { $fast_caches = 1 }
+if not defined use_caches     { $use_caches = true }
+if not defined mask_utx_intr  { $mask_utx_intr = 0 }
+
+# cache stuff
+if not defined tiny_penal { $tiny_penal = 0 }
+if not defined use_txcache    { $use_txcache = 0 }
+if not defined multi_level_c  { $multi_level_c = 1 }
+if not defined use_txcmp      { $use_txcmp = 0 }
+if not defined memhier_stress_test { $memhier_stress_test = 0 }
+if not defined mainmem_stress_range{ $mainmem_stress_range = 0 }
+if not defined cache_stress_range { $cache_stress_range = 0 }
+   
+# store buffer stuff. If passthru is set
+# to 1, then the store buffer should have no
+# effect (ie. no store buffer present)
+if not defined sb_passthru { $sb_passthru = 0 }
+if not defined sb_slots { $sb_slots = 32 }
+if not defined sb_buffer_tx_writes { $sb_buffer_tx_writes = 0 }
+if not defined sb_unbounded_tx_mode { $sb_unbounded_tx_mode = 0 }
+
+# General stuff
+if not defined freq_mhz { $freq_mhz     = 3000 }
+if not defined num_cpus { $num_cpus     = 8 }
+if not defined profile_interval { $profile_interval = 0 }
+
+# Osatxm stuff
+if not defined htm_model { $htm_model = "metatm" }
+if not defined logtm_mode { $logtm_mode = 0 }
+if not defined conflict_granularity { $conflict_granularity = 64 }
+if not defined backoff_policy { $backoff_policy       = "linear" }
+if not defined backoff_free_mode { $backoff_free_mode = 0 }
+if not defined contention_manager_domain { $contention_manager_domain = "HW" }
+if not defined contention_policy { $contention_policy = "timestamp" }
+if not defined conflict_cost { $conflict_cost         = 5 }
+if not defined overflow_cost { $overflow_cost     = 0 }
+if not defined reduce_txwtor { $reduce_txwtor = 1 }
+if not defined commit_penalty { $commit_penalty = 5 }
+if not defined ov_per_line_cost { $ov_per_line_cost = 0 }
+if not defined stall_on_conflict { $stall_on_conflict = 0 }
+if not defined deadlock_detection { $deadlock_detection = 3 }
+if not defined deadlock_threshold { $deadlock_threshold = 10000 }
+if not defined enable_txgate { $enable_txgate = 0 }
+if not defined conflict_mode { $conflict_mode = 1 }
+if not defined ctm_verbose_mode { $ctm_verbose_mode = 0 }
+if not defined ctm_ww_conflict_mode { $ctm_ww_conflict_mode = 0 }
+if not defined ctm_fw_restrict_mode { $ctm_fw_restrict_mode = 0 }
+if not defined ctm_complex_dep_mode { $ctm_complex_dep_mode = 1 }
+if not defined ctm_nodep_restart_thresh { $ctm_nodep_restart_thresh = 100 }
+if not defined ctm_respect_topsort_mode { $ctm_respect_topsort_mode = 0 }
+if not defined bloom_filter_size { $bloom_filter_size = 1024 }
+if not defined bloom_filter_hashes { $bloom_filter_hashes = 5 }
+if not defined bloom_filter_parallel { $bloom_filter_parallel = 1 }
+if not defined runq_mode { $runq_mode = 0 }
+if not defined memory_megs { $memory_megs = 1024 }
+if not defined txmigration_mode { $txmigration_mode = 1 }
+if not defined active_tx_bonus { $active_tx_bonus = 5 }
+if not defined tx_restart_bonus { $tx_restart_bonus = 8 }
+if not defined large_tx_bonus { $large_tx_bonus = 10 }
+if not defined tx_overflow_bonus { $tx_overflow_bonus = 7 }
+if not defined complexconf_bonus { $complexconf_bonus = 8 }
+if not defined longrunning_tx_bonus { $longrunning_tx_bonus = 10 }
+if not defined stalled_tx_bonus { $stalled_tx_bonus = 0 }
+if not defined scheduler_mode { $scheduler_mode = 1 }
+if not defined restart_desched_thresh { $restart_desched_thresh = 8000 }
+if not defined restart_avg_cycles { $restart_avg_cycles = 2000 }
+if not defined tx_trace { $tx_trace = 0 }
+if not defined log_restarts { $log_restarts = 0 }
+if not defined overflow_restart { $overflow_restart = 0 }
+if not defined tlb_miss_restart { $tlb_miss_restart = 0 }
+if not defined cc_protocol { $cc_protocol = "xmesi" }
+
+# Syncchar vars
+################
+if not defined archived_worksets { $archived_worksets = 128 }
+if not defined log_worksets      { $log_worksets      = TRUE }
+
+#################################################################
+#
+# Benchmark configuration - comment out to run none.  Edit list to
+# choose benchmarks.  
+#
+# Options are:
+#   breakpoint
+#   killsim
+#   find_datagrep
+#   find_fileonly
+#   mab
+#   config
+#   counter
+#   kernalloc
+#   kernalloc_2n
+#   kernalloc_3n
+#   kernalloc_4n
+#   mysql
+#   specweb_cli OR specweb_cli_primary - the two are mutually exclusive
+#   apt
+#   scp
+#   server # specweb, scp or apt benchmarks
+#   splash2_radix
+#   splash2_fft
+#   splash2_cholesky
+#   splash2_lu
+#   splash2_ocean
+#   splash2_radiosity
+#   splash2_water_nsq
+#   sleep # sleep 2 seconds
+#   pmake
+#   pmake_15n
+#   pmake_2n
+#   dpunish
+#   dpunish_fast
+#Before run the benchmarks, make sure the director /syscall is in the disk mnt
+#   2page-write
+#   asymmetric-write
+#   concurrent-write
+#   correctness
+#   dirent_test
+#   filelock-race
+#   mmap_test
+#   my_mmap_tx
+#   pipe-test
+#   random_kill
+#   simple-counter
+#   simple-exec
+#   simple-fork
+#   simple_sigaction
+#   tocttou_victim
+#   tx_chmod
+#   tx_chmod_sleep
+#   usertm_test
+#   write-commit-rollback
+#   write_test
+#   xbegin-semantics
+#   simple_clone
+#   fdtstress
+#   simple_fd
+#################################################################
+@if not "benchmarks" in globals().keys():
+	benchmarks = ["mab","breakpoint"] 
+
+# Seconds to wait after end of benchmarks before a killsim is executed
+if not defined idle_seconds { $idle_seconds = 0 }
+
+# Preload benchmark data set (if supported by benchmark)
+if not defined preload { $preload = 1 }
+
+# Set the frequency of querying kernel stats, in seconds.  0 == disabled
+if not defined kstat_seconds{ $kstat_seconds = 0.1 }
+
+
+
+$cpi          = 1
+if not defined cpu_class { $cpu_class = "pentium-4" }
+$text_console = "yes"
+$use_acpi     = TRUE
+
+# This attribute creates a network card.  Should be automatically set
+# by need-network.py.  Uncomment this to explicity override
+$create_network = "no"
+#run-command-file "need-network.py"
+
+if not defined mac_address { $mac_address = "10:10:10:10:10:26" }
+if not defined ip_address  { $ip_address  = "10.10.0.2" }
+if not defined host_name   { $host_name = "dredd" }
+$rtc_time     = "2011-04-22 10:00:00 UTC"
+
+
+# below should be at the end of the line
+
+# Switch time during boot
+cpu-switch-time 1000
+
+
+# Switch time after boot
+$cpu_switch_time = 5
+
+run-command-file "dredd-osa.simics"
+
+# Change the TLB parameters
+$myCpuNum = 0
+while $myCpuNum < $num_cpus {
+    $myTlb = "cpu" + $myCpuNum + "_tlb"
+    $myTlb->type = "normal"
+    $myCpuNum += 1
+}
+
+# Enable Writing to disk image
+
+#@files = conf.disk0_image.files
+#@files[-1][1] = "rw"
+#@conf.disk0_image.files = files
+
+
+#@files = conf.disk1_image.files
+#@files[-1][1] = "rw"
+#@conf.disk1_image.files = files
+
+
+# Model disk delays
+
+# During boot
+$ide0 = ($sb.get-component-object ide0)
+#$ide0->model_dma_delay  = 1
+#$ide0->interrupt_delay  = .0055
+if defined disk_image2 { $ide1 = ($sb.get-component-object ide1) }
+#$ide1->model_dma_delay  = 1
+#$ide1->interrupt_delay  = .0055
+
+# After boot
+$disk_delay = 0.0
+
+# Set the desired grub option. 0 is default.  This must be set to pick
+# right kernel
+if not defined grub_option { $grub_option = 0 }
+
+#Load symbol table for kernel, required by osatxm and others
+#we rely on the name being st0 inside osatxm
+run-command-file "./grub.simics"
+
+
+##########################################################
+# Networking
+##########################################################
+
+# If you want to communicate with the outside world, uncomment this:
+# (includes forwarding port 8080 on host to 80 on simics machine)
+#run-command-file "./add-external-network.include"
+
+#########################################################
+# Use these for simics-only virtual networking
+#
+# NB: mutually exclusive with outside networking (afaik)
+#
+#########################################################
+
+# use this if you are the central server
+#run-command-file "./add-nw-server.include"
+
+# use this if you are not the central server, replacing localhost in
+# the include file appropriately
+#run-command-file "./add-nw-client.include"
+
+##########################################################
+# Osacommon - baseline simulation tools.  Always on.
+##########################################################
+run-command-file "./add-common.include" 
+
+##########################################################
+# Osatxm
+##########################################################
+if $use_osatxm == true {
+	run-command-file "./add-osatxm.include" 
+}
+
+##########################################################
+# Syncchar
+##########################################################
+if $use_syncchar == true {
+	run-command-file "./add-syncchar.include"
+}
+
+##########################################################
+# Synccount - (must come before caches)
+##########################################################
+if $use_synccount == true {
+	run-command-file "./add-synccount.include"
+}
+
+##########################################################
+# To use framedropper
+# Uncomment the line below
+##########################################################
+#run-command-file "./add-klutz.include"
+
+##########################################################
+# To use simple debug dumper
+# Uncomment the line below
+##########################################################
+#run-command-file "./add-dumper.include"
+
+##################################
+# cache parameters
+##################################
+@txcsize = 512*64
+@l1cache_line_size = 64	
+@l1cache_lines = txcsize/l1cache_line_size
+@l1cache_assoc = 4
+@l1cache_policy = 'lru'
+@l1cache_penalty_ns = 1
+@l1cache_penalty = l1cache_penalty_ns * (simenv.freq_mhz / 1000)
+@l2cache_lines = 65536	
+@l2cache_line_size = 64	
+@l2cache_assoc = 8 
+@l2cache_policy = 'lru'
+@l2cache_penalty_ns = 4
+@l2cache_penalty = l2cache_penalty_ns * (simenv.freq_mhz / 1000)
+@main_mem_penalty = (50 * ( simenv.freq_mhz / 1000)) + 50
+@if simenv.tiny_penal == 1:
+  l2cache_penalty = 1
+  main_mem_penalty = 2	
+
+###################################################
+# amount to randomly perturb cache misses
+# currently off by default, along with random seed
+# which gets passed straight to srandom
+###################################################
+if not defined cache_perturb_ns { $cache_perturb_ns = 0 }
+if not defined cache_seed { $cache_seed = 1 }
+
+###################################################
+# squash all cache latencies during boot
+###################################################
+if not defined fast_caches { $fast_caches = 1 }
+
+############################################################
+# Parameters for BW limitation on front bus. Zero value for 
+# bandwidth_limit disable the BW limitation. Penalty factor 
+# is now adaptive so the parameter is just the initial value. 
+############################################################
+if not defined frontbus_bandwidth_limit_bpc {
+	$frontbus_bandwidth_limit_bpc = 0 
+}
+
+if not defined frontbus_busy_penalty_factor {
+	$frontbus_busy_penalty_factor = 4 
+}
+
+if not defined frontbus_check_interval {
+	$frontbus_check_interval = 1000 
+}
+############################################################
+#Parameters for BW statistics from front bus
+############################################################
+if not defined frontbus_stat_interval {
+	$frontbus_stat_interval = 20000 
+}
+
+if not defined frontbus_stat_size {
+	$frontbus_stat_size = 500 
+}
+
+###########################################################
+# set the below parameter if want to produce data for
+# memory BW graphs
+###########################################################
+if not defined frontbus_bw_data {
+	$frontbus_bw_data = 0 
+}
+##########################################################
+# To connect the cache hierarchy, uncomment the line below.
+##########################################################
+if $use_caches == true {
+   if $use_txcache == 1 {
+     run-command-file "./memory_hierarchy.py"
+   } else {
+     if $multi_level_c == 1 {
+          run-command-file "./cachehierarchy.py"
+     } else {
+          run-command-file "./gconelevelcache.py"
+     }
+   }
+}
+
+######################################################################
+# Because we load the cache hierarchy after the module is created, we
+# have to write the configuration to the log via a special command in
+# a special script
+######################################################################
+$prefix = (get-component-prefix)
+@if not "log_dir" in globals().keys():
+	log_dir = ''
+
+@if not "common_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		common_log = '%scommon-%s' % (log_dir, log_suffix)
+	else :
+		common_log = "common.log"
+
+@if simenv.prefix != "":
+   common_log_split = common_log.split(".")
+   common_log_split.insert(-1, simenv.prefix[0:-1])
+   common_log_tag = ".".join(common_log_split)
+else:
+   common_log_tag = common_log
+
+@if not "synccount_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		synccount_log = '%ssynccount-%s' % (log_dir, log_suffix)
+	else :
+		synccount_log = "sync_count.log"
+
+@if simenv.prefix != "":
+   synccount_log_split = synccount_log.split(".")
+   synccount_log_split.insert(-1, simenv.prefix[0:-1])
+   synccount_log_tag = ".".join(synccount_log_split)
+else:
+   synccount_log_tag = synccount_log
+
+@if not "syncchar_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		syncchar_log = '%ssyncchar-%s' % (log_dir, log_suffix)
+	else :
+		syncchar_log = "sync_char.log"
+
+@if simenv.prefix != "":
+   syncchar_log_split = syncchar_log.split(".")
+   syncchar_log_split.insert(-1, simenv.prefix[0:-1])
+   syncchar_log_tag = ".".join(syncchar_log_split)
+else:
+   syncchar_log_tag = syncchar_log
+
+@if not "osatxm_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		osatxm_log = '%sosatxm-%s' % (log_dir, log_suffix)
+	else :
+		cmstr = simenv.htm_model
+		if simenv.conflict_mode == 2:
+		   cmstr = 'ctm'
+		if simenv.conflict_mode == 3:
+		   cmstr = cmstr+'lazy'
+		archstr = 'smp'
+		if simenv.use_txcmp == 1:
+		   archstr = 'cmp'
+		protstr = simenv.cc_protocol
+		osatxm_log = 'osatxm_%s_%icpu_%s_%s_%s-%i.log' % (benchmarks[0], simenv.num_cpus, archstr, protstr, cmstr, simenv.grub_option)
+
+@if simenv.prefix != "":
+   osatxm_log_split = osatxm_log.split(".")
+   osatxm_log_split.insert(-1, simenv.prefix[0:-1])
+   osatxm_log_tag = ".".join(osatxm_log_split)
+else:
+   osatxm_log_tag = osatxm_log
+
+@if not "txcache_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		txcache_log = '%stxcache-%s' % (log_dir, log_suffix)
+	else :
+		cmstr = simenv.htm_model
+		if simenv.conflict_mode == 2:
+		   cmstr = 'ctm'
+		if simenv.conflict_mode == 3:
+		   cmstr = cmstr+'lazy'
+		archstr = 'smp'
+		if simenv.use_txcmp == 1:
+		   archstr = 'cmp'
+		protstr = simenv.cc_protocol
+		txcache_log = 'txcache_%s_%icpu_%s_%s_%s-%i.log' % (benchmarks[0], simenv.num_cpus, archstr, protstr, cmstr, simenv.grub_option)
+
+@if simenv.prefix != "":
+   txcache_log_split = txcache_log.split(".")
+   txcache_log_split.insert(-1, simenv.prefix[0:-1])
+   txcache_log_tag = ".".join(txcache_log_split)
+else:
+   txcache_log_tag = txcache_log
+
+@if not "profile_log" in globals().keys():
+   if "log_suffix" in globals().keys():
+      profile_log = '%sprofiler-%s' % (log_dir, log_suffix.split(".")[0])
+   else :
+      profile_log = "profiler"
+
+run-command-file "./init-logs.py"
+
+# Swap to the directory ./swap so that we don't run out of image swap
+# space on the condor machine.  The default of /var/tmp is typically
+# only 2 GB, and multiple simulations run on one machine.  Also,
+# eliminate limits on the amount of swapped space.  This number is
+# constrained by the size of the disk image and the simulated RAM, so
+# it won't grow without bound.  In the common case, this won't be an
+# issue, but it can be for long-running simulations.
+set-memory-limit 0 ./swap
+
+# Let 'er rip by default, unless this is a multi-machine situation
+if $multi != "yes" { c }
+

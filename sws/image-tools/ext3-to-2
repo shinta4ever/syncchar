@@ -1,0 +1,10 @@
+#!/bin/sh
+
+. environment
+
+umount $DISK_IMG >& /dev/null
+set_loopback
+tune2fs -O ^has_journal $LOOPDEV
+# Repeat the params back to me
+tune2fs -l $LOOPDEV
+unset_loopback

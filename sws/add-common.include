@@ -1,0 +1,46 @@
+# MetaTM Project
+# File Name: add-common.include
+#
+# Description: Simics commands to load the common module.
+#
+# Operating Systems & Architecture Group
+# University of Texas at Austin - Department of Computer Sciences
+# Copyright 2006, 2007. All Rights Reserved.
+# See LICENSE file for license terms.
+
+local $common_name = (get-component-prefix) + "common"
+local $context_name = (get-component-prefix) + "common_context"
+new-context $context_name
+
+@system = getattr(conf, simenv.system)
+@context = getattr(conf, simenv.context_name)
+
+$common = `SIM_create_object("common", simenv.common_name, [['system', system], ['context', context]])`
+
+@try:
+	common = getattr(conf, simenv.common)
+	common.benchmarks = benchmarks
+except:
+	print 'Hey asshole, your pants are on fire: ', sys.exc_info()[0]
+	raise
+
+
+$common->cpu_switch_time = $cpu_switch_time
+$common->disk_delay = $disk_delay
+
+local $prefix = (get-component-prefix)
+@common = getattr(conf, simenv.common)
+@ide0 = getattr(conf, simenv.prefix + 'ide0')
+@try:
+	ide1 = getattr(conf, simenv.prefix + 'ide1')
+	common.ide = [ide0, ide1]
+except:
+	common.ide = [ide0]
+
+$common->grub_option = $grub_option
+$common->preload     = $preload
+$common->fast_caches = $fast_caches
+
+@common.idle_cycles = int(simenv.idle_seconds * 1000000 * simenv.freq_mhz)
+
+$common->profile_interval = $profile_interval

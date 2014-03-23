@@ -1,0 +1,241 @@
+# MetaTM Project
+# File Name: osa-common.simics
+#
+# Description: 
+#
+# Operating Systems & Architecture Group
+# University of Texas at Austin - Department of Computer Sciences
+# Copyright 2006, 2007. All Rights Reserved.
+# See LICENSE file for license terms.
+
+echo "Your host is: "
+@import os
+@os.system('hostname')
+
+run-command-file "osa-config.simics"
+
+## If you want to checkpoint mid-application the application
+## (recommended for bayes), comment out the following two lines
+#@if simenv.checkpoint_name is not None:
+#   benchmarks.insert(0, 'breakpoint')
+
+# Switch time during boot
+cpu-switch-time $boot_cpu_switch_time
+
+run-command-file "dredd-osa.simics"
+
+# Change the TLB parameters
+$myCpuNum = 0
+while $myCpuNum < $num_cpus {
+    $myTlb = "cpu" + $myCpuNum + "_tlb"
+    $myTlb->type = "normal"
+    $myCpuNum += 1
+}
+
+
+# Enable Writing to disk image
+#@files = conf.disk0_image.files
+#@files[-1][1] = "rw"
+#@conf.disk0_image.files = files
+#@files = conf.disk1_image.files
+#@files[-1][1] = "rw"
+#@conf.disk1_image.files = files
+
+
+# Model disk delays
+# During boot
+$ide0 = ($sb.get-component-object ide0)
+#$ide0->model_dma_delay  = 1
+#$ide0->interrupt_delay  = .0055
+if defined disk_image2 { $ide1 = ($sb.get-component-object ide1) }
+#$ide1->model_dma_delay  = 1
+#$ide1->interrupt_delay  = .0055
+
+
+#Load symbol table for kernel, required by osatxm and others
+#we rely on the name being st0 inside osatxm
+run-command-file "./grub.simics"
+
+
+##########################################################
+# Networking
+##########################################################
+
+# If you want to communicate with the outside world, uncomment this:
+# (includes forwarding port 8080 on host to 80 on simics machine)
+#run-command-file "./add-external-network.include"
+
+#########################################################
+# Use these for simics-only virtual networking
+#
+# NB: mutually exclusive with outside networking (afaik)
+#
+#########################################################
+
+# use this if you are the central server
+#run-command-file "./add-nw-server.include"
+
+# use this if you are not the central server, replacing localhost in
+# the include file appropriately
+#run-command-file "./add-nw-client.include"
+
+##########################################################
+# Osacommon - baseline simulation tools.  Always on.
+##########################################################
+run-command-file "./add-common.include" 
+
+##########################################################
+# Osatxm - the Tyrant
+##########################################################
+if $use_osatxm == 1 {
+	run-command-file "./add-osatxm.include" 
+} else if $use_osatxm == 2 {
+   load-module dummy-osatxm
+}
+
+##########################################################
+# Syncchar - the Hero
+##########################################################
+if $use_syncchar == 1 {
+	run-command-file "./add-syncchar.include"
+}
+
+##########################################################
+# Synccount - (must come before caches)
+##########################################################
+if $use_synccount == 1 {
+	run-command-file "./add-synccount.include"
+}
+
+##########################################################
+# To use framedropper
+# Uncomment the line below
+##########################################################
+#run-command-file "./add-klutz.include"
+
+##########################################################
+# To use simple debug dumper
+# Uncomment the line below
+##########################################################
+#run-command-file "./add-dumper.include"
+
+##########################################################
+# To connect the cache hierarchy, uncomment the line below.
+##########################################################
+if $use_caches == 1 {
+   if $use_txcache == 1 {
+     run-command-file "./memory_hierarchy.py"
+   } else {
+     if $multi_level_c == 1 {
+          run-command-file "./cachehierarchy.py"
+     } else {
+          run-command-file "./gconelevelcache.py"
+     }
+   }
+}
+
+######################################################################
+# Because we load the cache hierarchy after the module is created, we
+# have to write the configuration to the log via a special command in
+# a special script
+######################################################################
+$prefix = (get-component-prefix)
+@if not "log_dir" in globals().keys():
+	log_dir = ''
+
+@if not "synccount_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		synccount_log = '%ssynccount-%s' % (log_dir, log_suffix)
+	else :
+		synccount_log = "sync_count.log"
+
+@if simenv.prefix != "":
+   synccount_log_split = synccount_log.split(".")
+   synccount_log_split.insert(-1, simenv.prefix[0:-1])
+   synccount_log_tag = ".".join(synccount_log_split)
+else:
+   synccount_log_tag = synccount_log
+
+@if not "syncchar_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		syncchar_log = '%ssyncchar-%s' % (log_dir, log_suffix)
+	else :
+		syncchar_log = "sync_char.log"
+
+@if simenv.prefix != "":
+   syncchar_log_split = syncchar_log.split(".")
+   syncchar_log_split.insert(-1, simenv.prefix[0:-1])
+   syncchar_log_tag = ".".join(syncchar_log_split)
+else:
+   syncchar_log_tag = syncchar_log
+
+@if not "osatxm_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		osatxm_log = '%sosatxm-%s' % (log_dir, log_suffix)
+	else :
+		cmstr = simenv.htm_model
+		if simenv.conflict_mode == 2:
+		   cmstr = 'ctm'
+		if simenv.conflict_mode == 3:
+		   cmstr = cmstr+'lazy'
+		archstr = 'smp'
+		if simenv.use_txcmp == 1:
+		   archstr = 'cmp'
+		protstr = simenv.cc_protocol
+		osatxm_log = 'osatxm_%s_%icpu_%s_%s_%s-%i.log' % (benchmarks[0], simenv.num_cpus, archstr, protstr, cmstr, simenv.grub_option)
+
+@if simenv.prefix != "":
+   osatxm_log_split = osatxm_log.split(".")
+   osatxm_log_split.insert(-1, simenv.prefix[0:-1])
+   osatxm_log_tag = ".".join(osatxm_log_split)
+else:
+   osatxm_log_tag = osatxm_log
+
+@if not "txcache_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		txcache_log = '%stxcache-%s' % (log_dir, log_suffix)
+	else :
+		cmstr = simenv.htm_model
+		if simenv.conflict_mode == 2:
+		   cmstr = 'ctm'
+		if simenv.conflict_mode == 3:
+		   cmstr = cmstr+'lazy'
+		archstr = 'smp'
+		if simenv.use_txcmp == 1:
+		   archstr = 'cmp'
+		protstr = simenv.cc_protocol
+		txcache_log = 'txcache_%s_%icpu_%s_%s_%s-%i.log' % (benchmarks[0], simenv.num_cpus, archstr, protstr, cmstr, simenv.grub_option)
+
+@if simenv.prefix != "":
+   txcache_log_split = txcache_log.split(".")
+   txcache_log_split.insert(-1, simenv.prefix[0:-1])
+   txcache_log_tag = ".".join(txcache_log_split)
+else:
+   txcache_log_tag = txcache_log
+
+@if not "profile_log" in globals().keys():
+   if "log_suffix" in globals().keys():
+      profile_log = '%sprofiler-%s' % (log_dir, log_suffix.split(".")[0])
+   else :
+      profile_log = "profiler"
+
+run-command-file "./init-logs.py"
+
+# Swap to the directory ./swap so that we don't run out of image swap
+# space on the condor machine.  The default of /var/tmp is typically
+# only 2 GB, and multiple simulations run on one machine.  Also,
+# eliminate limits on the amount of swapped space.  This number is
+# constrained by the size of the disk image and the simulated RAM, so
+# it won't grow without bound.  In the common case, this won't be an
+# issue, but it can be for long-running simulations.
+set-memory-limit 0 ./swap
+
+# Let 'er rip by default, unless this is a multi-machine situation
+if $multi != "yes" { c }
+
+# if a checkpoint is desired, write it and exit
+if defined checkpoint_name {
+   write-configuration $checkpoint_name
+   run-python-file "parse-simics-checkpoint.py"
+   exit
+}

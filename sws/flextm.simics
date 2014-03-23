@@ -1,0 +1,22 @@
+# MetaTM Project
+# File Name: flextm.simics
+#
+# Description: simics script with default
+# parameters set for a FlexTM-like HTM model.
+#
+# Operating Systems & Architecture Group
+# University of Texas at Austin - Department of Computer Sciences
+# Copyright 2006, 2007. All Rights Reserved.
+# See LICENSE file for license terms.
+   
+if not defined use_tx_log { $use_tx_log = 0 }
+if not defined sb_passthru { $sb_passthru = 0 }
+if not defined sb_slots { $sb_slots = 32 }
+if not defined sb_buffer_tx_writes { $sb_buffer_tx_writes = 0 }
+if not defined sb_unbounded_tx_mode { $sb_unbounded_tx_mode = 0 }
+if not defined overflow_restart { $overflow_restart = 0 }
+if not defined tlb_miss_restart { $tlb_miss_restart = 0 }
+if not defined htm_model { $htm_model = "flextm" }
+if not defined cc_protocol { $cc_protocol = "tmesi" }
+
+run-command-file ./osa-common.simics

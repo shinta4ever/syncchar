@@ -1,0 +1,49 @@
+# MetaTM Project
+# File Name: add-syncchar.include
+#
+# Description: Simics commands to load and configure syncchar.
+#
+# Operating Systems & Architecture Group
+# University of Texas at Austin - Department of Computer Sciences
+# Copyright 2006, 2007. All Rights Reserved.
+# See LICENSE file for license terms.
+
+local $syncchar_name = (get-component-prefix) + "syncchar"
+local $context_name = (get-component-prefix) + "syncchar_context"
+new-context $context_name
+
+@system = getattr(conf, simenv.system)
+@context = getattr(conf, simenv.context_name)
+
+$syncchar = `SIM_create_object("sync_char", simenv.syncchar_name, [['system', system], ['context', context], ['mapfile', simenv.sync_char_map[simenv.grub_option]]])`
+
+$syncchar->archived_worksets = $archived_worksets
+$syncchar->log_worksets = $log_worksets
+
+if $use_txcache == 1 {
+	$syncchar->use_txcache = 1
+}else{
+	$syncchar->use_txcache = 0
+}
+
+@try:
+  osatxm    = getattr(conf, simenv.osatxm)
+  syncchar    = getattr(conf, simenv.syncchar)
+  if osatxm:
+	syncchar.osatxm = osatxm
+except NameError:
+  print 'syncchar has no osatxm interface'
+except TypeError:
+  print 'syncchar has no osatxm interface'
+except:
+	print 'Hey asshole, your pants are on fire: ', sys.exc_info()[0]
+	raise
+
+
+$syncchar->cpu_switch_time = $cpu_switch_time
+$syncchar->disk_delay = $disk_delay
+@syncchar = getattr(conf, simenv.syncchar)
+@syncchar.stat_interval = int(simenv.kstat_seconds * 1000000 * simenv.freq_mhz)
+
+# Register with common
+$common->modules = $syncchar

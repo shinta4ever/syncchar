@@ -1,0 +1,29 @@
+# MetaTM Project
+# File Name: add-nw-server.include
+#
+# Description: Sets up networking among simics instances.  One
+# instance must be the central server, and this script sets that
+# instance up.
+#
+# Operating Systems & Architecture Group
+# University of Texas at Austin - Department of Computer Sciences
+# Copyright 2006, 2007. All Rights Reserved.
+# See LICENSE file for license terms.
+
+# Don't need these with dredd
+#new-service-node link = ethlink0 ip = 100.1.1.1 netmask = 255.255.255.0
+#sn0.connect link0 100.1.1.1
+
+new-central-server
+connect-central obj = central_server
+link0->central = central_client
+
+# debugging
+#dec0->log-level = 4
+
+sn0.add-host 10.10.0.2 "server"  "network.sim" "10:10:10:10:10:26"
+sn0.add-host 10.10.0.3 "client1" "network.sim" "10:10:10:10:10:27"
+sn0.add-host 10.10.0.4 "client2" "network.sim" "10:10:10:10:10:28"
+sn0.add-host 10.10.0.5 "client3" "network.sim" "10:10:10:10:10:29"
+sn0.add-host 10.10.0.6 "client4" "network.sim" "10:10:10:10:10:2A"
+sn0.add-host 10.10.0.7 "client5" "network.sim" "10:10:10:10:10:2B"

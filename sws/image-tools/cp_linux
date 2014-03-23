@@ -1,0 +1,18 @@
+#!/bin/bash
+
+. environment
+
+mount_image
+INSTALL_PATH=$MNT/boot make ARCH=i386 install
+INSTALL_MOD_PATH=$MNT make ARCH=i386 modules_install
+rm $MNT/boot/*.old
+rm $MNT/boot/vmlinuz
+rm $MNT/boot/System.map
+rm $MNT/boot/config
+chroot $MNT update-grub
+cp $MNT/boot/System.map* ../sws/
+cp vmlinux ../sws/vmlinux-`cat .kernelrelease`
+./grub-menu-parser.pl < $MNT/boot/grub/menu.lst
+unmount_image
+
+cp System.map ../sws/

@@ -1,0 +1,4 @@
+#!/bin/sh
+sed -e '/osa.img/s/osa[.]img/osa64.img/g' osa-common.simics -i
+
+./simics -e '$cpu_class="x86-hammer"' osa-common.simics 

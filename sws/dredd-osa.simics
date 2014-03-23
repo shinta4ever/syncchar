@@ -1,0 +1,42 @@
+###############################################
+# dredd-osa.simics
+# derived from dredd-common.simics
+# in simics targets, but omitting 
+# cd-rom drive and sometimes networking.
+###############################################
+
+add-directory "%simics%/targets/x86-440bx"
+
+if not defined create_network {}
+if not defined mac_address    {$mac_address = "10:10:10:10:10:26"}
+if not defined disk_image     {$disk_image = "dredd-install.disk"}
+if not defined use_agp {$use_agp = TRUE}
+###
+
+if $use_agp {
+    run-command-file "x86-osa-system.include"
+} else {
+    run-command-file "x86-440bx-pci-system.include"
+}
+
+# Only do this if we want a network card
+if $create_network {
+    $eth = (create-pci-bcm5703c mac_address = $mac_address)
+    $nb.connect pci-slot4 $eth
+}
+
+if $disk_image2 {
+    $disk2 = (create-std-ide-disk size = $disk_size2 file = $disk_image2)
+    $sb.connect ide0-slave $disk2
+}
+
+instantiate-components
+
+# Only do this if we want a network card
+if $create_network {
+    $eth_comp = $eth
+    $eth_cnt = ""
+    run-command-file "%simics%/targets/common/add-eth-link.include"
+}
+
+run-command-file "dredd-setup.include"

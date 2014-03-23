@@ -1,0 +1,48 @@
+$multi = "yes"
+
+if not defined machines{ $machines = 2 }
+$id = 0
+$mac_addrs = "10:10:10:10:10:2"
+$mac_start = 6
+
+$ip_addrs = "10.10.0."
+$ip_start = 2
+
+# We need to define this here so that we don't set io_break on a
+# non-existant module
+if not defined use_osatxm     { $use_osatxm = true }
+
+# Specweb example
+#   benchmarks_list = [["server"], ["specweb_cli_primary", "killsim"], 
+#		      ["specweb_cli", "killsim"],
+#		      ["specweb_cli", "killsim"],
+#		      ["specweb_cli", "killsim"],
+#		      ["specweb_cli", "killsim"],
+#		     ]
+
+
+@if not "benchmarks_list" in globals().keys():
+   benchmarks_list = [["nc_server"], ["nc", "killsim"]]
+
+while $id < $machines {
+   set-component-prefix "osa" + $id + "_"
+   `benchmarks = benchmarks_list[simenv.id]`
+   $mac_address = $mac_addrs + $mac_start
+   $ip_address = $ip_addrs + $ip_start
+   $host_name = (get-component-prefix) + "dredd"
+
+   if $id == 0 { $create_network = "yes" }
+
+   run-command-file ./osa-common.simics
+
+   if $use_osatxm == true {
+      $osatxm->io_break = 0;
+   }
+
+   $id += 1
+   $mac_start += 1
+   $ip_start += 1
+}
+
+# Let 'er rip by default
+c

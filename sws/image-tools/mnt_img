@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. environment
+
+mount_image

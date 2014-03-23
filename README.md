@@ -1,4 +1,4 @@
 syncchar
 ========
 
-Syncchar - synchronization analysis tol
+Syncchar - synchronization analysis tool

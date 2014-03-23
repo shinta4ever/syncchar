@@ -1,0 +1,8 @@
+#!/bin/sh
+
+. environment
+
+umount $DISK_IMG >& /dev/null
+set_loopback
+fsck.ext3 -pDf $LOOPDEV
+unset_loopback

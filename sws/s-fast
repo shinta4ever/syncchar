@@ -1,0 +1,2 @@
+#!/bin/sh
+./simics osa-common.simics

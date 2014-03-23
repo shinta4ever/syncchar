@@ -1,0 +1,159 @@
+# Load a checkpoint and run
+
+run-command-file "./osa-config.simics"
+
+run-command-file "./grub.simics"
+new-context "common-context"
+
+read-configuration $checkpoint_name
+read-configuration $checkpoint_name + "-common"
+
+$common = common
+
+@conf.common.benchmarks = benchmarks
+
+
+$system = common->system
+
+##########################################################
+# Osatxm
+##########################################################
+if $use_osatxm == 2 or $use_txcache == 1 {
+	run-command-file "./add-osatxm.include" 
+   $osatxm->simics_checkpoint_mode = 1
+   $osatxm->past_bios = 1
+
+   if $use_osatxm == 0 {
+      load-module dummy-osatxm
+   }
+}
+@if simenv.use_osatxm == 2 or simenv.use_txcache == 1:
+   getattr(conf, simenv.osatxm).os_visibility = getattr(conf, simenv.common).os_visibility
+
+##########################################################
+# Syncchar
+##########################################################
+if $use_syncchar == 2 or $use_syncchar == 1 {
+	run-command-file "./add-syncchar.include"
+	# set past_boot flag
+}
+@if simenv.use_syncchar == 2 or simenv.use_syncchar == 1:
+   getattr(conf, simenv.syncchar).os_visibility = getattr(conf, simenv.common).os_visibility
+
+@if simenv.use_syncchar == 2:
+   getattr(conf, simenv.syncchar).after_boot = 1
+   
+
+##########################################################
+# To connect the cache hierarchy, uncomment the line below.
+##########################################################
+if $use_caches == 2 {
+   if $use_txcache == 1 {
+     run-command-file "./memory_hierarchy.py"
+   } else {
+     if $multi_level_c == 1 {
+          run-command-file "./cachehierarchy.py"
+     } else {
+          run-command-file "./gconelevelcache.py"
+     }
+   }
+}
+
+######################################################################
+# Because we load the cache hierarchy after the module is created, we
+# have to write the configuration to the log via a special command in
+# a special script
+######################################################################
+$prefix = (get-component-prefix)
+@if not "log_dir" in globals().keys():
+	log_dir = ''
+
+@if not "synccount_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		synccount_log = '%ssynccount-%s' % (log_dir, log_suffix)
+	else :
+		synccount_log = "sync_count.log"
+
+@if simenv.prefix != "":
+   synccount_log_split = synccount_log.split(".")
+   synccount_log_split.insert(-1, simenv.prefix[0:-1])
+   synccount_log_tag = ".".join(synccount_log_split)
+else:
+   synccount_log_tag = synccount_log
+
+@if not "syncchar_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		syncchar_log = '%ssyncchar-%s' % (log_dir, log_suffix)
+	else :
+		syncchar_log = "sync_char.log"
+
+@if simenv.prefix != "":
+   syncchar_log_split = syncchar_log.split(".")
+   syncchar_log_split.insert(-1, simenv.prefix[0:-1])
+   syncchar_log_tag = ".".join(syncchar_log_split)
+else:
+   syncchar_log_tag = syncchar_log
+
+@if not "osatxm_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		osatxm_log = '%sosatxm-%s' % (log_dir, log_suffix)
+	else :
+		cmstr = simenv.htm_model
+		if simenv.conflict_mode == 2:
+		   cmstr = 'ctm'
+		if simenv.conflict_mode == 3:
+		   cmstr = cmstr+'lazy'
+		archstr = 'smp'
+		if simenv.use_txcmp == 1:
+		   archstr = 'cmp'
+		protstr = simenv.cc_protocol
+		osatxm_log = 'osatxm_%s_%icpu_%s_%s_%s-%i.log' % (benchmarks[0], simenv.num_cpus, archstr, protstr, cmstr, simenv.grub_option)
+
+@if simenv.prefix != "":
+   osatxm_log_split = osatxm_log.split(".")
+   osatxm_log_split.insert(-1, simenv.prefix[0:-1])
+   osatxm_log_tag = ".".join(osatxm_log_split)
+else:
+   osatxm_log_tag = osatxm_log
+
+@if not "txcache_log" in globals().keys():
+	if "log_suffix" in globals().keys():
+		txcache_log = '%stxcache-%s' % (log_dir, log_suffix)
+	else :
+		cmstr = simenv.htm_model
+		if simenv.conflict_mode == 2:
+		   cmstr = 'ctm'
+		if simenv.conflict_mode == 3:
+		   cmstr = cmstr+'lazy'
+		archstr = 'smp'
+		if simenv.use_txcmp == 1:
+		   archstr = 'cmp'
+		protstr = simenv.cc_protocol
+		txcache_log = 'txcache_%s_%icpu_%s_%s_%s-%i.log' % (benchmarks[0], simenv.num_cpus, archstr, protstr, cmstr, simenv.grub_option)
+
+@if simenv.prefix != "":
+   txcache_log_split = txcache_log.split(".")
+   txcache_log_split.insert(-1, simenv.prefix[0:-1])
+   txcache_log_tag = ".".join(txcache_log_split)
+else:
+   txcache_log_tag = txcache_log
+
+@if not "profile_log" in globals().keys():
+   if "log_suffix" in globals().keys():
+      profile_log = '%sprofiler-%s' % (log_dir, log_suffix.split(".")[0])
+   else :
+      profile_log = "profiler"
+
+run-command-file "./init-logs.py"
+
+# Swap to the directory ./swap so that we don't run out of image swap
+# space on the condor machine.  The default of /var/tmp is typically
+# only 2 GB, and multiple simulations run on one machine.  Also,
+# eliminate limits on the amount of swapped space.  This number is
+# constrained by the size of the disk image and the simulated RAM, so
+# it won't grow without bound.  In the common case, this won't be an
+# issue, but it can be for long-running simulations.
+set-memory-limit 0 ./swap
+
+# continue twice, since the breakpoint will be hit again
+c; c

@@ -1,0 +1,156 @@
+Getting started with Syncchar
+=============================	
+
+System Requirements
+-------------------
+
+Syncchar operates as a module for Virtutech Simics. Thus, the first step
+is to download and install Simics. Simics requires a license, but free
+academic licenses (personal and site) are available.
+
+Because we optimize certain stages of the boot, we had to modify some
+of the hardware configuration scripts, most notable
+sws/dredd-osa.simics. By default, this expects simcs version 3.0.27 to
+be installed at /opt/virtutech/simics-3.0.27. This script must be
+edited if you choose to install to a different location or use a
+different version.
+
+If you wish to use more than 15 cpus, you must use version 3.0.27 or
+higher. If you use 3.0.27, you must follow the steps posted on the
+simics mailing list to update the bios. These steps are not needed for
+3.0.28 or higher.
+
+Syncchar also requires a C++ compiler with support for the TR1
+libraries. In our development environment, we use gcc 4.1.2 or higher.
+
+Syncchar only supports the i386 architecture.  The release includes a 
+version of the 2.6.16 kernel with a few helpful optimizations for syncchar.
+
+Installing Simics
+-----------------
+
+Syncchar operates as a module for Virtutech Simics. Thus, the first step is to download and install Simics. Simics requires a license, but free academic licenses (personal and site) are available. 
+
+The release includes an sws directory.  In this directory, download the osa.img file from here:
+
+http://z.cs.utexas.edu/users/osa/metatm/releases/1.2/osa.img.bz2
+
+Execute the following commands from the sws directory:
+
+$ bunzip2 osa.img.bz2
+
+$ <path-to-simics>/bin/workspace-setup . --force
+
+$ make
+
+--------------
+
+This will build the simics modules that you require.
+
+================================
+
+As an example, we will describe how to run syncchar on a user-level program, like STAMP.
+
+================================
+
+Compiling Linux for Syncchar
+----------------------------
+
+Because osa.img is relatively small (only 1.5 GB), we configure a fairly minimal kernel to save space.
+
+Use the 'linux32' binary on a 64-bit system to build for 32-bit i386--the only architecture supported:
+
+$ linux32 make menuconfig
+
+The default options should generally be good.  Under "OSA Tools",
+there are several options that may only be useful for kernel-level
+profiling, such as "Register lock names with the simulator" and
+"Insert nop in rcu_read_lock" for syncchar.
+
+Select "Exit" and Save your changes.
+
+Build the kernel:
+
+$ linux32 make -j 2
+
+Note: It looks like you cannot build linux 2.6.16 with a compiler newer than gcc 4.5.  The .config may work on a newer kernel, compatible with gcc 4.6, but this is untested.
+
+Copy the linux binary into the disk image:
+
+$ sudo ./cp_linux
+
+Building stamp
+--------------
+
+As an example, let's start with the lock-based stamp benchmarks.
+
+$ cd sws/benchmarks/stamp
+$ make
+
+In each benchmark directory, there will be several variants, e.g.:
+
+ssca2.lock, ssca2.ordertm, ssca2.tl2
+
+The Makefile also generates a sync_char.map.bayes.lock, which is created by running scripts/sync_char_pre.py on the binary.
+
+This should be copied into the disk image, along with the bayes binary, by using the image tool (linked in the linux directory):
+
+$ sudo ./mnt_img
+$ sudo cp ../sws/benchmarks/stamp/ssca2/ssca2.lock ./mnt/root/stamp/
+$ sudo umount ./mnt
+
+Copy the map file into the sws directory
+
+$ cd ../sws
+$ cp ./benchmarks/stamp/ssca2/sync_char.map.ssca2.lock sync_char.map.ssca2
+
+Note that the map is loaded dynamically by a magic instruction that does not include the '.lock' suffix.
+
+Running syncchar in simics
+--------------------------
+
+Simulation parameters are controlled by osa-common.simics.  The defaults should be generally good.
+
+To run a given benchmark, edit the benchmarks array, to something like this:
+
+        benchmarks = ["ssca2_sim.lock", "killsim"]
+
+These are controlled by /root/scripts/run-benchmarks.pl in the disk
+image.  There are a few options about input size for ssca, and it
+handles different suffixes.
+
+Note that there is a trade-off between fidelity of the measurements
+and speed of the actual simulation: higher-fidelity numbers take
+longer to collect.  So to validate that things work, you can cut a few
+corners, rather than wait to find out there is a bug.
+
+
+A few short-cuts (not for realistic measurements):
+use_caches = false
+freq_mhz = 100
+
+You can also speed up the simulation by turning off the '-stall' and
+'-no-stc' options in the 's' script, but I would not do this for
+measurements you report.  These options are required for HTM
+simulations under any conditions.
+
+To start the simulation type:
+
+$ ./s
+
+Post-processing
+---------------
+
+Syncchar should create a file in the sws directory called sync_char.log.
+
+You can get the "real" output in a post-processing phase using sync_char_post.py.
+
+$ ../scripts/sync_char_post.py -m -l sync_char.log -x benchmarks/stamp/ssca2/ssca2.lock > ssca2.post
+
+There is also a sync_char_bulk_post.pl that can process a large collection of logs.
+
+The post-processed file should have lots of goodies.
+
+Note: If you want to do a number of CPUs other than 8, 16, or 32, you
+must edit NUM_CPUS and NUM_CPUS_ARRAY in the post-processing script.
+Patches welcome to make this more robust.
